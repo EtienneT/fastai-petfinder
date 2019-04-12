@@ -102,3 +102,18 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+/.vscode/
+/logs/
+/models/
+/test/
+/test_images/
+/test_metadata/
+/test_sentiment/
+/train/
+/train_images/
+/train_metadata/
+/train_sentiment/
+
+/*.pkl
+/*.csv
+/*.feather
