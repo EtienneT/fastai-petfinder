@@ -19,7 +19,7 @@ import os
 import feather
 from fastai.text import *
 
-from PetData import *
+from petfinder.data import *
 
 
 #%%
@@ -56,7 +56,7 @@ cat_names.remove('Description')
 # cont_names, cat_names
 
 #%%
-from Model import *
+from petfinder.model import *
 
 #%%
 from fastai.callbacks import *

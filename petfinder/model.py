@@ -16,27 +16,31 @@ class ImageTabularTextModel(nn.Module):
         self.use_trainer = use_trainer
         self.cnn = create_body(models.resnet34)
         nf = num_features_model(self.cnn) * 2
-        drop = .7
+        drop = .5
 
-        self.lm_encoder = SequentialRNN(encoder[0], PoolingLinearClassifier([400 * 3] + [512, 32], [drop, drop]))
+        self.lm_encoder = SequentialRNN(encoder[0], PoolingLinearClassifier([400 * 3] + [32], [.4]))
 
-        self.tab = TabularModel(emb_szs, n_cont, 128, [1000, 500])
+        self.tab = TabularModel(emb_szs, n_cont, 128, [512, 256])
 
-        self.reduce = nn.Sequential(*([AdaptiveConcatPool2d(), Flatten()] + bn_drop_lin(nf, 1024, bn=True, p=drop, actn=nn.ReLU(inplace=True)) + bn_drop_lin(1024, 512, bn=True, p=drop, actn=nn.ReLU(inplace=True))))
+        self.reduce = nn.Sequential(*([AdaptiveConcatPool2d(), Flatten()] + bn_drop_lin(nf, 512, bn=True, p=drop, actn=nn.ReLU(inplace=True))))
         self.merge = nn.Sequential(*bn_drop_lin(512 + 128 + 32, 128, bn=True, p=drop, actn=nn.ReLU(inplace=True)))
-        self.final = nn.Sequential(*bn_drop_lin(128, 5, bn=False, p=0., actn=None))
+        self.final = nn.Sequential(*bn_drop_lin(128, 1, bn=False, p=0., actn=None))
 
     def forward(self, img:Tensor, x:Tensor, text:Tensor) -> Tensor:
-        imgLatent = self.reduce(self.cnn(img))
+        imgCnn = self.cnn(img)
+        imgLatent = self.reduce(imgCnn)
         tabLatent = self.tab(x[0], x[1])
         textLatent = self.lm_encoder(text)
 
         cat = torch.cat([imgLatent, F.relu(tabLatent), F.relu(textLatent[0])], dim=1)
 
+        pred = self.final(self.merge(cat))
+        pred = torch.sigmoid(pred) * 4 # making sure this is in the range 0-4
+
         if(not self.use_trainer):
-            return self.final(self.merge(cat))
+            return pred
         else:
-            return self.final(self.merge(cat)), textLatent
+            return pred, textLatent
     
     def reset(self):
         for c in self.children():
@@ -92,7 +96,5 @@ def image_tabular_text_learner(data, len_cont_names, vocab_sz, data_lm, use_trai
     emb = data.train_ds.x.item_lists[1].get_emb_szs()
     model = ImageTabularTextModel(emb, len_cont_names, vocab_sz, l.model, use_trainer)
 
-    kappa = KappaScore()
-    kappa.weights = "quadratic"
-    learn = ImageTabularTextLearner(data, model, use_trainer, metrics=[accuracy, error_rate, kappa])
+    learn = ImageTabularTextLearner(data, model, use_trainer, metrics=[mae, rmse])
     return learn

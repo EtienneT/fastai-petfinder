@@ -98,8 +98,50 @@ def get_data(isTest:bool=False, useMetadata:bool=False):
 
             pets = pd.merge(pets, petsMetadata, how='left', on='PetID')
 
-        petsImages['NoDescription'] = petsImages['Description'].isna()
+        pets['NoDescription'] = pets['Description'].isna()
         pets['Description'] = pets['Description'].fillna('No description')
+
+        # state GDP: https://en.wikipedia.org/wiki/List_of_Malaysian_states_by_GDP
+        state_gdp = {
+            41336: 116.679,
+            41325: 40.596,
+            41367: 23.02,
+            41401: 190.075,
+            41415: 5.984,
+            41324: 37.274,
+            41332: 42.389,
+            41335: 52.452,
+            41330: 67.629,
+            41380: 5.642,
+            41327: 81.284,
+            41345: 80.167,
+            41342: 121.414,
+            41326: 280.698,
+            41361: 32.270
+        }
+
+        # state population: https://en.wikipedia.org/wiki/Malaysia
+        state_population = {
+            41336: 33.48283,
+            41325: 19.47651,
+            41367: 15.39601,
+            41401: 16.74621,
+            41415: 0.86908,
+            41324: 8.21110,
+            41332: 10.21064,
+            41335: 15.00817,
+            41330: 23.52743,
+            41380: 2.31541,
+            41327: 15.61383,
+            41345: 32.06742,
+            41342: 24.71140,
+            41326: 54.62141,
+            41361: 10.35977
+        }
+
+        pets["state_gdp"] = pets['State'].map(state_gdp)
+        pets["state_population"] = pets['State'].map(state_population)
+        pets["gdp_vs_population"] = pets["state_gdp"] / pets["state_population"]
 
         pets = pets.reset_index(drop=True)
 
