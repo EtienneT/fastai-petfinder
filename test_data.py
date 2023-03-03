@@ -7,7 +7,7 @@ import feather
 from pathlib import Path
 from pandas.io.json import json_normalize
 from tqdm import tqdm
-
+import fastai
 from PetData import *
 
 from fastai.tabular import *
